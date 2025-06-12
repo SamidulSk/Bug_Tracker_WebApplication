@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import todoRoute from "./routes/todo.route.js";
 import userRoute from "./routes/user.route.js";
+import summaryRoute from "./routes/summary.route.js";
 import cors from "cors";
 
 const app = express();
@@ -39,7 +40,7 @@ app.use(express.json());
 // routes
 app.use("/user", userRoute);
 app.use("/todo", todoRoute);
-
+app.use("/summary", summaryRoute);
 
 app.get(`/`, (req, res) => {
   res.send(`TODO App`);
