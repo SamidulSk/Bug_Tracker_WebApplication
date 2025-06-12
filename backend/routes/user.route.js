@@ -1,18 +1,15 @@
 import express from "express";
-
-import { register } from "../controller/user.controller.js";
-import { login } from "../controller/user.controller.js";
-import { logout } from "../controller/user.controller.js";
+import { register, login, logout, getUserProfile } from "../controller/user.controller.js";
+import { verifyToken } from "../jwt/token.js"; // Adjust if middleware path is different
 
 const router = express.Router();
 
-router.post("/sign-up", register);
-router.post("/sign-in", login);
+// Auth routes
+router.post("/register", register);
+router.post("/login", login);
 router.get("/logout", logout);
 
-  // Example protected route
-//   app.get('/protected', verifyToken, (req, res) => {
-//     res.json({ message: 'You have access' });
-//   });
+// Protected route (for testing token verification)
+router.get("/me", verifyToken, getUserProfile);
 
 export default router;

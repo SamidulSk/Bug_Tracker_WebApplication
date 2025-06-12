@@ -11,17 +11,20 @@ dotenv.config();
 // port
 const port = process.env.PORT || 4002;
 app.listen(port, () => {
-    console.log(`server up on ${port}`);
+  console.log(`server up on ${port}`);
 });
 
 // database connection
 const DB_URI = process.env.MONGODB_URI || "mongodb+srv://mrsamidul2002:CmQCIQzqRGWLLgyP@cluster0.dxkeu1q.mongodb.net/";
 (async () => {
   try {
-    await mongoose.connect(DB_URI);
-    console.log("Connected to MongoDB");
+    const { connection } = await mongoose.connect(DB_URI);
+    if (connection) {
+      console.log(`Connected to MongoDB: ${connection.host} ${connection.name}`);
+    }
   } catch (err) {
     console.log(err);
+    process.exit(1);
   }
 })();
 
@@ -34,9 +37,10 @@ app.use(cors({
 }));
 app.use(express.json());
 // routes
-app.use("/todo", todoRoute);
 app.use("/user", userRoute);
+app.use("/todo", todoRoute);
 
-app.get(`/`,(req,res) => {
-    res.send(`TODO App`);
+
+app.get(`/`, (req, res) => {
+  res.send(`TODO App`);
 })
