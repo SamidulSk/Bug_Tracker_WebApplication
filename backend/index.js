@@ -31,11 +31,12 @@ const DB_URI = process.env.MONGODB_URI || "mongodb+srv://mrsamidul2002:CmQCIQzqR
 
 
 app.use(cors({
-  origin: "*",// check tutorial @2:38 // fetch from .env file
-  // credentials: true, // enable cookies
-  methods: ["GET", "POST", "PUT", "DELETE"]
-  // allowedHeaders: ["Content-Type", "Authorization"] //  allowed headers
+  origin: "http://localhost:5173", 
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 app.use(express.json());
 // routes
 app.use("/user", userRoute);
