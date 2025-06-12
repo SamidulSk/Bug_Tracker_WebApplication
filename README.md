@@ -92,7 +92,9 @@ PORT=4002
 MONGODB_URI=mongodb+srv://my_uri
 JWT_SECRET=my_jwt_secret
 OPENAI_API_KEY=my_groq_api_key
+```
 
+---
 
 ## 🧠 Author
 
