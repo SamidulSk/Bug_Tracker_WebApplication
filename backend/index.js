@@ -15,13 +15,16 @@ app.listen(port, () => {
 });
 
 // database connection
-const DB_URI = process.env.MONGODB_URI || "mongodb+srv://harshit:9512007h*H@cluster0.3s1ed.mongodb.net/todo_app";
-try {
-  await mongoose.connect(DB_URI);
-  console.log(`Connected to MongoDB`);
-} catch (error) {
-  console.log(error);
-}
+const DB_URI = process.env.MONGODB_URI || "mongodb+srv://mrsamidul2002:CmQCIQzqRGWLLgyP@cluster0.dxkeu1q.mongodb.net/";
+(async () => {
+  try {
+    await mongoose.connect(DB_URI);
+    console.log("Connected to MongoDB");
+  } catch (err) {
+    console.log(err);
+  }
+})();
+
 
 app.use(cors({
   origin: "*",// check tutorial @2:38 // fetch from .env file
