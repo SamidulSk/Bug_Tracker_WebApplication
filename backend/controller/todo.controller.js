@@ -22,11 +22,30 @@ export const createTodo = async (req, res) => {
   }
 };
 
-// READ All ToDos for Logged-in User
+// READ with Pagination + Sorting
 export const getTodoList = async (req, res) => {
   try {
-    const todos = await TodoModel.find({ user: req.user.id }).sort({ dueDate: 1 });
-    res.status(200).json({ message: "Todo list fetched", todos });
+    const { page = 1, limit = 10, sortBy = "dueDate", order = "asc" } = req.query;
+
+    const sortOptions = {
+      dueDate: { dueDate: order === "asc" ? 1 : -1 },
+      priority: { priority: order === "asc" ? 1 : -1 },
+      isComplete: { isComplete: order === "asc" ? 1 : -1 }
+    };
+
+    const todos = await TodoModel.find({ user: req.user.id })
+      .sort(sortOptions[sortBy] || { dueDate: 1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await TodoModel.countDocuments({ user: req.user.id });
+
+    res.status(200).json({
+      message: "Todo list fetched",
+      page: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      todos
+    });
   } catch (error) {
     console.error("Fetch Todo Error:", error.message);
     res.status(500).json({ message: "Error fetching todo list" });
