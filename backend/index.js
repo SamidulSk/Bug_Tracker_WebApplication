@@ -5,7 +5,7 @@ import todoRoute from "./routes/todo.route.js";
 import userRoute from "./routes/user.route.js";
 import summaryRoute from "./routes/summary.route.js";
 import cors from "cors";
-
+import "./cron/reminderJob.js";
 const app = express();
 dotenv.config();
 

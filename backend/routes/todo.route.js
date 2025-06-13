@@ -11,7 +11,7 @@ const router = express.Router();
 
 // 
 // @desc    Create a new task
-router.post("/createTodo", verifyToken, createTodo);
+router.post('/createTodo', verifyToken, createTodo);
 
 // 
 // @desc    Get all tasks for logged-in user

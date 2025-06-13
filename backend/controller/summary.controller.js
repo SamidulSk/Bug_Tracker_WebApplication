@@ -27,7 +27,7 @@ export const generateDailySummary = async (req, res) => {
       return res.status(404).json({ message: "No completed tasks for today" });
     }
 
-    const prompt = `Summarize the following tasks I completed today:\n${taskList}`;
+    const prompt = `congradulate me and Summarize the following tasks I completed today without any further question:\n${taskList}`;
 
     const completion = await openai.chat.completions.create({
   messages: [{ role: "user", content: prompt }],
