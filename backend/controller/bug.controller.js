@@ -118,7 +118,7 @@ export const updateBug = async (req, res) => {
       { _id: id, user: req.user._id },
       updateFields,
       { new: true }
-    ).populate("tags.tag");
+    );
 
     if (!updatedBug) {
       return res.status(404).json({ message: "Bug not found." });
@@ -130,6 +130,7 @@ export const updateBug = async (req, res) => {
     res.status(500).json({ message: "Error updating bug", error: error.message });
   }
 };
+
 
 // ✅ Delete Bug
 export const deleteBug = async (req, res) => {
