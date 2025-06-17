@@ -1,39 +1,53 @@
 import cron from "node-cron";
-import TodoModel from "../model/todo.model.js";
+import BugModel from "../model/bug.model.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
-// Every hour at minute 0
+// Run every hour
 cron.schedule("0 * * * *", async () => {
   const now = new Date();
-  const targetTime = new Date(now.getTime() + 5 * 60 * 60 * 1000); // 5 hours ahead
+  const fiveHoursLater = new Date(now.getTime() + 5 * 60 * 60 * 1000);
 
-  const startHour = new Date(targetTime.setMinutes(0, 0, 0));
-  const endHour = new Date(targetTime.setMinutes(59, 59, 999));
+  const startWindow = new Date(fiveHoursLater.setMinutes(0, 0, 0));
+  const endWindow = new Date(fiveHoursLater.setMinutes(59, 59, 999));
 
   try {
-    const todos = await TodoModel.find({
-      isComplete: false,
-      reminder: true,
-      dueDate: { $gte: startHour, $lt: endHour },
-    }).populate("user");
+    // 1️⃣ Bugs with severity "Critical" and due in next 5 hours
+    const criticalDueSoon = await BugModel.find({
+      severity: "Critical",
+      dueDate: { $gte: startWindow, $lt: endWindow },
+    }).populate("assignedTo");
 
-    if (todos.length === 0) {
-      console.log("📭 No reminders to send this hour.");
-      return;
+    for (const bug of criticalDueSoon) {
+      if (bug.assignedTo?.email) {
+        await sendEmail({
+          to: bug.assignedTo.email,
+          subject: `🚨 Urgent: Bug "${bug.title}" due in 5 hours!`,
+          text: `Hi ${bug.assignedTo.name},\n\nThe critical bug "${bug.title}" is due soon at ${new Date(bug.dueDate).toLocaleString()}.\nPlease prioritize this immediately.\n\n- Bug Tracker`,
+        });
+      }
     }
 
-    for (const todo of todos) {
-      if (!todo.user?.email) continue;
+    // 2️⃣ Bugs that are newly assigned and not notified yet (assuming you have a `notified` flag)
+    const recentlyAssigned = await BugModel.find({
+      assignedTo: { $ne: null },
+      notified: false,
+    }).populate("assignedTo");
 
-      await sendEmail({
-        to: todo.user.email,
-        subject: `⏰ Reminder: "${todo.title}" is due in 5 hours!`,
-        text: `Hey ${todo.user.username},\n\nYour task "${todo.title}" is due at ${new Date(todo.dueDate).toLocaleString()}.\nMake sure to finish it on time!\n\n- Task Manager Bot`,
-      });
+    for (const bug of recentlyAssigned) {
+      if (bug.assignedTo?.email) {
+        await sendEmail({
+          to: bug.assignedTo.email,
+          subject: `🆕 New Bug Assigned: "${bug.title}"`,
+          text: `Hi ${bug.assignedTo.name},\n\nYou have been assigned a new bug titled "${bug.title}".\nSeverity: ${bug.severity}\nPlease check and take action.\n\n- Bug Tracker`,
+        });
+
+        bug.notified = true;
+        await bug.save();
+      }
     }
 
-    console.log(`✅ Sent ${todos.length} reminder email(s) at ${new Date().toLocaleTimeString()}`);
+    console.log("✅ Email notifications sent for due & assigned bugs.");
   } catch (error) {
-    console.error("❌ Reminder Cron Error:", error.message);
+    console.error("❌ Cron job error:", error.message);
   }
 });

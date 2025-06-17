@@ -1,28 +1,38 @@
+// dashboard.jsx
 import { useEffect, useState } from "react";
-import axios from "../Helper/axiosConfig";
+import axios from "../Helper/axiosConfig.js";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
-  const [todos, setTodos] = useState([]);
+  const [bugs, setBugs] = useState([]);
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
-  const [newTask, setNewTask] = useState({ title: "", description: "", dueDate: "", priority: "Medium", reminder: false });
-  const [editingTaskMap, setEditingTaskMap] = useState({});
-  const [summary, setSummary] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("dueDate");
-  const [order, setOrder] = useState("asc");
+  const [sortBy, setSortBy] = useState("severity");
+  const [order, setOrder] = useState("desc");
+  const [view, setView] = useState("all");
+  const [filterTags, setFilterTags] = useState([]);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    severity: "low",
+    status: "Open",
+    assignedTo: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const navigate = useNavigate();
 
-  const fetchTodos = async () => {
+  const fetchBugs = async () => {
     try {
-      const response = await axios.get(`/todo/getTodoList?page=${page}&limit=5&sortBy=${sortBy}&order=${order}`);
-      setTodos(response.data.todos || []);
+      const res = await axios.get(
+        `/bug/getBugList?page=${page}&limit=100&sortBy=${sortBy}&order=${order}`
+      );
+      setBugs(res.data.bugs || []);
     } catch (err) {
       if (err.response?.status === 401) navigate("/login");
-      setError("Unable to fetch tasks");
+      setError("Unable to fetch bugs");
     }
   };
 
@@ -30,237 +40,362 @@ export default function Dashboard() {
     try {
       const res = await axios.get("/user/me");
       setUser(res.data.user);
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch user");
     }
   };
 
   useEffect(() => {
-    fetchTodos();
+    fetchBugs();
     fetchUser();
   }, [page, sortBy, order]);
-
-
-const handleCreate = async () => {
-  try {
-    const taskData = {
-      ...newTask,
-      reminder: newTask.reminder ?? false, 
-    };
-
-    await axios.post("/todo/createTodo", taskData);
-    fetchTodos();
-    setNewTask({
-      title: "",
-      description: "",
-      dueDate: "",
-      priority: "Medium",
-      reminder: false, 
-    });
-    setError(null); 
-  } catch (err) {
-    setError(err.response?.data?.message || "Failed to create task");
-  }
-};
-
-
-  const handleStatusToggle = async (id) => {
-    const task = todos.find((t) => t._id === id);
-    await axios.put(`/todo/updateTodo/${id}`, { isComplete: !task.isComplete });
-    fetchTodos();
-  };
-
-  const handleDelete = async (id) => {
-    await axios.delete(`/todo/${id}`);
-    fetchTodos();
-  };
-
-  const handleUpdate = async (id) => {
-    const task = editingTaskMap[id];
-    await axios.put(`/todo/updateTodo/${id}`, task);
-    setEditingTaskMap((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-    fetchTodos();
-  };
-
-  const toggleReminder = async (id, current) => {
-    try {
-      await axios.put(`/todo/updateTodo/${id}`, { reminder: !current });
-      fetchTodos();
-    } catch {
-      alert("Failed to toggle reminder");
-    }
-  };
-
-  const handleGenerateSummary = async () => {
-    try {
-      const completedTasks = todos.filter(t => t.isComplete);
-      if (completedTasks.length === 0) {
-        setSummary("No completed tasks to summarize.");
-        setShowModal(true);
-        return;
-      }
-      const response = await axios.post("/summary/generate");
-      setSummary(response.data.summary.content);
-      setShowModal(true);
-    } catch (err) {
-      setSummary("Failed to generate summary");
-      setShowModal(true);
-    }
-  };
 
   const logout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
-  const today = new Date().toISOString().split("T")[0];
-  const todayTasks = todos.filter((t) => t.dueDate?.slice(0, 10) === today && !t.isComplete);
-  const upcoming = todos.filter((t) => t.dueDate?.slice(0, 10) > today && !t.isComplete);
-  const completed = todos.filter((t) => t.isComplete);
+  const resetForm = () => {
+    setFormData({ title: "", description: "", severity: "low", status: "Open", assignedTo: "" });
+    setEditingId(null);
+  };
 
-  const TaskGroup = ({ title, tasks }) => (
-    <div className="mb-8">
-      <div className="flex justify-between items-center border-b pb-2 mb-2">
-        <h2 className="text-xl font-semibold text-white">
-          {title} <span className="bg-blue-800 text-white text-xs px-2 py-1 rounded-full ml-2">{tasks.length}</span>
-        </h2>
+  const handleInput = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleBugSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const payload = {
+      ...formData,
+      severity:
+        formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1),
+    };
+    try {
+      if (editingId) {
+        await axios.put(`/bug/updateBug/${editingId}`, payload);
+      } else {
+        await axios.post("/bug/createBug", payload);
+      }
+      resetForm();
+      fetchBugs();
+    } catch {
+      alert("Bug submission failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (bug) => {
+    setFormData({
+      title: bug.title,
+      description: bug.description,
+      severity: bug.severity.toLowerCase(),
+      status: bug.status,
+      assignedTo: bug.assignedTo?._id || "",
+    });
+    setEditingId(bug._id);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure to delete this bug?")) {
+      try {
+        await axios.delete(`/bug/${id}`);
+        fetchBugs();
+      } catch {
+        alert("Failed to delete bug");
+      }
+    }
+  };
+
+  const triggerTagGen = async (bugId) => {
+  try {
+    const res = await axios.post(`/tag/generate/${bugId}`);
+    console.log("✅ Tags Generated:", res.data);
+    fetchBugs(); 
+  } catch (err) {
+    console.error("❌ Tag generation failed:", err.response?.data || err.message);
+    alert("Tag generation failed. Check console for details.");
+  }
+};
+
+  const toggleFilterTag = (tagId) => {
+    const id = typeof tagId === "object" ? tagId._id : tagId;
+    setFilterTags((prev) =>
+      prev.includes(id) ? prev.filter((tid) => tid !== id) : [...prev, id]
+    );
+  };
+
+  const groupedBy = (key) =>
+    bugs.reduce((acc, bug) => {
+      const group = bug[key] || "Unspecified";
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(bug);
+      return acc;
+    }, {});
+
+  const isTagMatch = (tag) => {
+    const id = tag?.tag?._id || tag?._id || tag;
+    return filterTags.includes(id);
+  };
+
+  const filteredBugs = bugs.filter(
+    (bug) =>
+      filterTags.length === 0 ||
+      (bug.tags || []).some(isTagMatch)
+  );
+
+  const renderBugCard = (bug) => (
+    <div
+      key={bug._id}
+      className="p-4 bg-slate-800 border border-slate-600 rounded-lg shadow mb-3"
+    >
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-bold text-white">{bug.title}</h3>
+        <div className="flex gap-2 text-xs">
+          <span className="px-2 py-1 rounded bg-blue-700 text-white">
+            {bug.status}
+          </span>
+          <span className="px-2 py-1 rounded bg-purple-700 text-white">
+            {bug.severity}
+          </span>
+        </div>
       </div>
-      <div className="grid gap-4">
-        {tasks.map((task) => (
-          <div key={task._id} className="p-4 bg-slate-800 border border-slate-600 rounded-lg shadow text-white flex flex-col sm:flex-row justify-between sm:items-center">
-            <div className="w-full">
-              {editingTaskMap[task._id] ? (
-                <>
-                  <input
-                    type="text"
-                    value={editingTaskMap[task._id].title || ""}
-                    onChange={(e) => setEditingTaskMap(prev => ({ ...prev, [task._id]: { ...prev[task._id], title: e.target.value } }))}
-                    className="w-full mb-2 p-2 bg-slate-700 rounded text-white"
-                  />
-                  <input
-                    type="text"
-                    value={editingTaskMap[task._id].description || ""}
-                    onChange={(e) => setEditingTaskMap(prev => ({ ...prev, [task._id]: { ...prev[task._id], description: e.target.value } }))}
-                    className="w-full mb-2 p-2 bg-slate-700 rounded text-white"
-                  />
-                </>
-              ) : (
-                <>
-                  <h3 className="text-lg font-bold">{task.title}</h3>
-                  <p className="text-sm text-slate-300">{task.description}</p>
-                </>
-              )}
-              <p className="text-xs text-slate-400">Due: {task.dueDate?.slice(0, 10)}</p>
-              <p className="text-xs text-slate-400">Priority: {task.priority}</p>
-              <p className="text-xs text-slate-400">Reminder: {task.reminder ? "On" : "Off"}</p>
-            </div>
-            <div className="flex gap-2 mt-3 sm:mt-0 flex-wrap">
-              {editingTaskMap[task._id] ? (
-                <button onClick={() => handleUpdate(task._id)} className="text-sm text-green-400 hover:underline">Save</button>
-              ) : (
-                <button
-                  onClick={() => setEditingTaskMap(prev => ({ ...prev, [task._id]: { title: task.title, description: task.description } }))}
-                  className="text-sm text-yellow-400 hover:underline"
-                >Edit</button>
-              )}
-              <button onClick={() => handleStatusToggle(task._id)} className="text-sm text-blue-400 hover:underline">
-                {task.isComplete ? "Undo" : "Complete"}
-              </button>
-              <button onClick={() => handleDelete(task._id)} className="text-sm text-red-400 hover:underline">Delete</button>
-              <button onClick={() => toggleReminder(task._id, task.reminder)} className="text-sm text-cyan-400 hover:underline">
-                {task.reminder ? "Disable Reminder" : "Enable Reminder"}
-              </button>
-            </div>
-          </div>
-        ))}
+      <p className="text-sm text-slate-300 mt-1">{bug.description}</p>
+      {bug.assignedTo && (
+        <p className="text-xs text-slate-400 mt-1">
+          👤 {bug.assignedTo.name} ({bug.assignedTo.email})
+        </p>
+      )}
+      <div className="mt-2 flex flex-wrap gap-2">
+        {(bug.tags || []).map((tag, i) => {
+          const tagId = tag._id || i;
+          const tagName =
+            typeof tag === "string"
+              ? tag
+              : tag.name || tag.tag || String(tagId);
+          const isAI = tag.source === "ai";
+          return (
+            <span
+              key={tagId}
+              onClick={() => toggleFilterTag(tagId)}
+              className={`cursor-pointer px-2 py-1 rounded-full text-xs ${
+                filterTags.includes(tagId) ? "bg-green-600" : "bg-slate-600"
+              }`}
+            >
+              {tagName} {isAI && "🤖"}
+            </span>
+          );
+        })}
+        <button
+          onClick={() => triggerTagGen(bug._id)}
+          className="ml-auto text-sm bg-indigo-600 px-2 py-1 rounded"
+        >
+          Generate Tags
+        </button>
+      </div>
+      <p className="text-xs text-slate-500 mt-1">
+        📅 {new Date(bug.createdAt).toLocaleDateString()}
+      </p>
+      <div className="mt-2 flex space-x-2">
+        <button
+          onClick={() => handleEdit(bug)}
+          className="bg-yellow-600 px-3 py-1 rounded text-xs"
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => handleDelete(bug._id)}
+          className="bg-red-600 px-3 py-1 rounded text-xs"
+        >
+          Delete
+        </button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-900 py-8 px-4">
+    <div className="min-h-screen bg-slate-900 text-white px-4 py-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-2">
-          <div>
-            <h1 className="text-4xl font-bold text-white">Dashboard</h1>
-            {user && <p className="text-sm text-slate-300">👋 Welcome, <span className="font-semibold text-white">{user.username}</span></p>}
-          </div>
-          <div className="flex gap-3">
-            <button onClick={logout} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Logout</button>
-            <button onClick={handleGenerateSummary} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">AI Summary</button>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-4xl font-bold">🐞 Bug Tracker Dashboard</h1>
+          <div className="flex items-center gap-4">
+            {user && (
+              <p className="text-sm text-slate-300">
+                👋 Welcome,{" "}
+                <span className="font-semibold">{user.username}</span>
+              </p>
+            )}
+            <button
+              onClick={logout}
+              className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
+            >
+              Logout
+            </button>
           </div>
         </div>
 
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-slate-800 text-white p-6 rounded-lg shadow-lg w-full max-w-lg relative">
-              <h2 className="text-xl font-bold mb-4">📄 AI Summary</h2>
-              <p className="text-sm whitespace-pre-line bg-slate-700 p-4 rounded mb-4 max-h-60 overflow-y-auto">{summary}</p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(summary);
-                    alert("Summary copied to clipboard");
-                  }}
-                  className="bg-blue-500 px-3 py-2 rounded hover:bg-blue-600 text-sm"
-                >📋 Copy</button>
-                {navigator.share && (
-                  <button
-                    onClick={() => {
-                      navigator.share({ title: "AI Summary", text: summary });
-                    }}
-                    className="bg-purple-500 px-3 py-2 rounded hover:bg-purple-600 text-sm"
-                  >🔗 Share</button>
-                )}
-                <button className="bg-red-600 px-3 py-2 rounded hover:bg-red-700 text-sm" onClick={() => setShowModal(false)}>Close</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-slate-800 p-6 rounded-lg shadow mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-white">Add New Task</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <input type="text" placeholder="Title" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} className="p-2 border rounded-md bg-slate-700 text-white" />
-            <input type="text" placeholder="Description" value={newTask.description} onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} className="p-2 border rounded-md bg-slate-700 text-white" />
-            <input type="date" value={newTask.dueDate} onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })} className="p-2 border rounded-md bg-slate-700 text-white" />
-            <select value={newTask.priority} onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })} className="p-2 border rounded-md bg-slate-700 text-white">
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
+        <form
+          onSubmit={handleBugSubmit}
+          className="bg-slate-800 p-4 mb-6 rounded border border-slate-600"
+        >
+          <h2 className="text-xl font-semibold mb-3">
+            {editingId ? "✏️ Update Bug" : "📝 Report a New Bug"}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              required
+              name="title"
+              className="p-2 bg-slate-700 rounded"
+              placeholder="Bug title"
+              value={formData.title}
+              onChange={handleInput}
+            />
+            <input
+              name="assignedTo"
+              className="p-2 bg-slate-700 rounded"
+              placeholder="Assigned To (User ID)"
+              value={formData.assignedTo}
+              onChange={handleInput}
+            />
+            <select
+              name="severity"
+              className="p-2 bg-slate-700 rounded"
+              value={formData.severity}
+              onChange={handleInput}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
             </select>
+            <textarea
+              required
+              name="description"
+              className="md:col-span-3 p-2 bg-slate-700 rounded"
+              placeholder="Bug description"
+              value={formData.description}
+              onChange={handleInput}
+            />
+            <select
+              name="status"
+              className="p-2 bg-slate-700 rounded"
+              value={formData.status}
+              onChange={handleInput}
+            >
+              <option>Open</option>
+              <option>In Progress</option>
+              <option>Resolved</option>
+              <option>Closed</option>
+            </select>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 px-4 py-2 rounded"
+            >
+              {loading
+                ? "Submitting..."
+                : editingId
+                ? "Update Bug"
+                : "Submit Bug"}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="bg-gray-600 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+            )}
           </div>
-          <button onClick={handleCreate} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Task</button>
-        </div>
+        </form>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
           <div className="space-x-2">
-            <label className="text-white text-sm">Sort by:</label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="p-2 border rounded-md bg-slate-700 text-white">
-              <option value="dueDate">Due Date</option>
-              <option value="priority">Priority</option>
-              <option value="isComplete">Status</option>
+            <label>Sort by:</label>
+            <select
+              className="p-2 bg-slate-700 rounded"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="severity">Severity</option>
+              <option value="status">Status</option>
+              <option value="createdAt">Created Date</option>
             </select>
-            <select value={order} onChange={(e) => setOrder(e.target.value)} className="p-2 border rounded-md bg-slate-700 text-white">
+            <select
+              className="p-2 bg-slate-700 rounded"
+              value={order}
+              onChange={(e) => setOrder(e.target.value)}
+            >
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
             </select>
           </div>
           <div className="space-x-2">
-            <button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700">Previous</button>
-            <button onClick={() => setPage((prev) => prev + 1)} className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700">Next</button>
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              className="px-4 py-2 bg-slate-600 rounded"
+            >
+              ← Prev
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              className="px-4 py-2 bg-slate-600 rounded"
+            >
+              Next →
+            </button>
           </div>
         </div>
 
-        {error && <p className="text-red-400 mb-4 text-center">{error}</p>}
+        <div className="flex gap-4 mb-6">
+          {["all", "status", "severity"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setView(tab)}
+              className={`px-4 py-2 rounded ${
+                view === tab ? "bg-blue-700" : "bg-slate-700"
+              }`}
+            >
+              {tab === "all"
+                ? "All Bugs"
+                : tab === "status"
+                ? "Status Grouped"
+                : "Severity Grouped"}
+            </button>
+          ))}
+        </div>
 
-        <TaskGroup title="Today's Focus" tasks={todayTasks} />
-        <TaskGroup title="Upcoming" tasks={upcoming} />
-        <TaskGroup title="Completed" tasks={completed} />
+        {view === "all" &&
+          filteredBugs.map(renderBugCard)}
+
+        {view === "status" &&
+          Object.entries(groupedBy("status")).map(([s, group]) => (
+            <div key={s} className="mb-6">
+              <h2 className="text-xl font-bold mb-2">{s}</h2>
+              {group
+                .filter(
+                  (b) =>
+                    filterTags.length === 0 ||
+                    (b.tags || []).some(isTagMatch)
+                )
+                .map(renderBugCard)}
+            </div>
+          ))}
+
+        {view === "severity" &&
+          Object.entries(groupedBy("severity")).map(([sev, group]) => (
+            <div key={sev} className="mb-6">
+              <h2 className="text-xl font-bold mb-2">{sev} Bugs</h2>
+              {group
+                .filter(
+                  (b) =>
+                    filterTags.length === 0 ||
+                    (b.tags || []).some(isTagMatch)
+                )
+                .map(renderBugCard)}
+            </div>
+          ))}
       </div>
     </div>
   );

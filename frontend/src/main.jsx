@@ -5,7 +5,7 @@ import "./index.css";
 import axios from "axios";
 
 // Axios config
-axios.defaults.baseURL = "http://localhost:4001";
+axios.defaults.baseURL = "http://localhost:4005";
 axios.defaults.headers.common["Content-Type"] = "application/json";
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");

@@ -1,22 +1,22 @@
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import todoRoute from "./routes/todo.route.js";
+import bugRoute from "./routes/bug.route.js";
 import userRoute from "./routes/user.route.js";
-import summaryRoute from "./routes/summary.route.js";
+import tagRoute from "./routes/tag.route.js";
 import cors from "cors";
 import "./cron/reminderJob.js";
 const app = express();
 dotenv.config();
 
 // port
-const port = process.env.PORT || 4002;
+const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`server up on ${port}`);
 });
 
 // database connection
-const DB_URI = process.env.MONGODB_URI || "mongodb+srv://mrsamidul2002:CmQCIQzqRGWLLgyP@cluster0.dxkeu1q.mongodb.net/";
+const DB_URI = process.env.MONGO_URI || "mongodb+srv://mrsamidul2002:40VlIn15YPG7GMlY@cluster0.rzt0wzm.mongodb.net/";
 (async () => {
   try {
     const { connection } = await mongoose.connect(DB_URI);
@@ -40,9 +40,9 @@ app.use(cors({
 app.use(express.json());
 // routes
 app.use("/user", userRoute);
-app.use("/todo", todoRoute);
-app.use("/summary", summaryRoute);
+app.use("/bug", bugRoute);
+app.use("/tag", tagRoute);
 
 app.get(`/`, (req, res) => {
-  res.send(`TODO App`);
+  res.send(`Bug Tracker App`);
 })
