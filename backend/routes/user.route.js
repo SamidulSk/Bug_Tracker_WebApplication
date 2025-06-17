@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, logout, getUserProfile } from "../controller/user.controller.js";
+import { register, login, logout, getUserProfile} from "../controller/user.controller.js";
 import { verifyToken } from "../jwt/token.js"; // Adjust if middleware path is different
 
 const router = express.Router();

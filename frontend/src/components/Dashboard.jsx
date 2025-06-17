@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const [bugs, setBugs] = useState([]);
   const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("severity");
