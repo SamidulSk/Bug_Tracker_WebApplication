@@ -1,126 +1,107 @@
-# ✅ Todo Web App – Backend (MERN + JWT + AI + Docker)
+# 🐞 Bug Tracker App – Full Stack (MERN + JWT + AI + Docker)
 
-A fully-featured, secure backend for a task management system, built with **Node.js**, **Express**, **MongoDB**, and **JWT Authentication**, along with **AI-generated summaries using Groq**, pagination, and sorting.
+A comprehensive, developer-friendly **Bug Tracking System**, built with **MERN stack** and enhanced by **AI-powered tag generation**. Designed for teams and developers to report, manage, and track bugs effectively with intuitive UI and seamless backend operations.
 
 ---
 
 ## 🚀 Features
 
 ### 🔐 Authentication
-- Register & login with **Zod validation**
-- JWT-based token auth
-- Protected user routes (`/me`, `/logout`)
+- JWT-based secure login/register
+- Auth-protected routes with user-based bug access
+- Admin/user role support
 
-### 📝 Task Management
-- Full CRUD operations
-- Fields: `title`, `description`, `dueDate`, `priority`, `isComplete`
+### 🐛 Bug Management
+- Full **CRUD** operations for bugs
+- Fields: `title`, `description`, `status`, `severity`, `tags`
+- Smart form handling with unified create/edit mode
 
-### 📄 Pagination & Sorting
-- `/todo/getTodoList?page=1&limit=10`
-- Sorting: `/todo/getTodoList?sortBy=priority&order=desc`
+### 🏷️ AI-Based Tagging
+- Auto-tag bugs using [Groq](https://groq.com) or OpenAI
+- Smart context extraction from description
+- Manual + AI-assisted tagging system
 
-### 🤖 AI Summary
-- Uses [Groq](https://groq.com) to generate daily summaries
-- `/summary/generate` → create summary
-- `/summary/history` → view history
+### 📂 Grouping & Filtering
+- Group bugs by `status` or `severity` using tabs/accordion
+- Filter by tags, sort bugs, paginate data
 
----
-
-## 📦 Tech Stack
-
-- **Node.js + Express** – backend API
-- **MongoDB + Mongoose** – database
-- **JWT + Bcrypt** – auth
-- **Zod** – validation
-- **Groq** – AI integration
-- **Docker + Docker Compose** – containerization
+### 🔄 Real-time UI Features
+- React-based UI with responsive components
+- Form reset, editing state, empty message support
+- Auto-refresh list after bug updates
 
 ---
 
-## 🐳 Dockerization Guide
+## 🛠️ Tech Stack
 
-### 🔧 1. `.env` File
-Create `.env` in root:
+- **Frontend**: React.js, Tailwind CSS, Axios, React Router DOM
+- **Backend**: Node.js, Express.js, MongoDB, Mongoose
+- **Auth**: JWT, Bcrypt
+- **AI**: Groq/OpenAI API (tag generation)
+- **Validation**: Zod
+- **Containerization**: Docker, Docker Compose
 
-PORT=4001
-MONGODB_URI=your_mongodb_atlas_uri
-JWT_SECRET=your_jwt_secret
-GROQ_API_KEY=your_groq_api_key
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
+---
 
-pgsql
-Copy
-Edit
+## 🐳 Docker Setup
 
-### 📁 2. Dockerfile
+### 📁 Project Structure
+/frontend → React frontend
+/backend → Node.js backend
+/docker-compose.yml
 
-```dockerfile
-# Dockerfile
+### ⚙️ Environment Variables
 
-FROM node:18
+Create `.env` file in `/backend`.
 
-WORKDIR /app
+**Backend `.env`:**
 
-COPY package*.json ./
 
-RUN npm install
+PORT=4005
+MONGODB_URI=my_mongo_uri
+JWT_SECRET=my_jwt_secret
+GROQ_API_KEY=my_groq_api_key
 
-COPY . .
 
-EXPOSE 4001
+---
 
-CMD ["npm", "run", "dev"]
-# docker-compose.yml
+### 📄 Docker Commands
 
-version: '3.8'
-
-services:
-  backend:
-    build: .
-    container_name: todo-backend
-    ports:
-      - "4001:4001"
-    env_file:
-      - .env
-    restart: always
-docker build -t todo-backend .
-docker run -p 4001:4001 --env-file .env todo-backend
-🔐 API Endpoints
-👤 User
+**Build and Run:**
+```bash
+docker-compose up --build
+🔗 API Endpoints
+👤 Auth
 Method	Endpoint	Description
 POST	/user/register	Register new user
-POST	/user/login	Login and get token
-GET	/user/me	Get current user
-GET	/user/logout	Mock logout
+POST	/user/login	Login user
+GET	/user/me	Get logged-in user
 
-📝 Todo
+🐞 Bug
 Method	Endpoint	Description
-POST	/todo/createTodo	Add new task
-GET	/todo/getTodoList	Fetch tasks
-PUT	/todo/updateTodo/:id	Update a task
-DELETE	/todo/:id	Delete a task
+POST	/bug/createBug	Create a bug
+GET	/bug/getAllBug	Get all bugs
+PUT	/bug/updateBug/:id	Update a bug
+DELETE	/bug/deleteBug/:id	Delete a bug
 
-🤖 AI Summary
+🧠 Tags
 Method	Endpoint	Description
-POST	/summary/generate	Generate daily summary
-GET	/summary/history	Fetch summary history
+POST	/tag/generateTag	Generate AI tags
 
-🧪 Postman Test Flow
+📪 Postman Flow
 Register/Login
 
-Copy token from login
+Copy token from login response
 
 Add header:
 Authorization: Bearer <token>
 
-Use any protected route
+Use protected routes
 
-🧠 Author
+👨‍💻 Author
 SK Samidul Hossain
 MERN Stack Developer | Java | DSA | AI Integration
-📧 Email: mrsamidul2002@gmail.com
-🌐 GitHub: samidul-hossain
-📘 LeetCode: leetcode.com/samidul_hossain
 
----
+📧 Email: mrsamidul2002@gmail.com
+🌐 GitHub: @samidul-hossain
+📘 LeetCode: leetcode.com/samidul_hossain

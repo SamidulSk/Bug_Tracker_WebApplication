@@ -1,20 +1,20 @@
-FROM node
+FROM node:18-alpine
 
-# Set working directory inside container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy all backend code to container
+# Install nodemon globally
+RUN npm install -g nodemon
+
+# Copy all source code
 COPY . .
 
-# Copy .env file
-COPY .env .env
+# Expose backend port
+EXPOSE 4005
 
-# Expose the backend port
-EXPOSE 4001
-
-# Start the server (if entry point is backend/index.js)
-CMD ["node", "backend/index.js"]
+# Start server using start script
+CMD ["npm", "start"]

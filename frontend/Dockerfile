@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
@@ -13,5 +13,8 @@ COPY . .
 # Expose Vite dev server port
 EXPOSE 5173
 
-# Start the frontend (Vite dev server)
+# Enable hot reload with polling 
+ENV CHOKIDAR_USEPOLLING=true
+
+# Start Vite dev server
 CMD ["npm", "run", "dev"]
