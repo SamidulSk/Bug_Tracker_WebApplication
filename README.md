@@ -136,5 +136,5 @@ Authorization: Bearer <token>
 *MERN Stack Developer | Java | DSA | AI Integration*
 
 * 📧 Email: [mrsamidul2002@gmail.com](mailto:mrsamidul2002@gmail.com)
-* 🌐 GitHub: [@samidul-hossain](https://github.com/samidul-hossain)
-* 📘 LeetCode: [leetcode.com/samidul\_hossain](https://leetcode.com/samidul_hossain)
+* 🌐 GitHub: [@SamidulSk](https://github.com/SamidulSk)
+* 📘 LeetCode: [leetcode.com/u/Sk_786](https://leetcode.com/u/Sk_786/)
